@@ -1,0 +1,17 @@
+version: 0.0
+os: linux
+files:
+  - source: ./webapp
+    destination: /webapp
+  - source: ./cloudwatch
+    destination: /webapp/cloudwatch
+hooks:
+  AfterInstall:
+  - location: codedeploy/afterInstall.sh
+    timeout: 240
+  ApplicationStart:
+  - location: codedeploy/applicationStart.sh
+    timeout: 240
+  BeforeInstall:
+  - location: codedeploy/beforeInstall.sh
+    timeout: 30

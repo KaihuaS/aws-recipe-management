@@ -1,0 +1,2 @@
+# JMeter generated Authorization file
+https://dev.yixie.me/v1/recipe	test2@example.com	Pa$$w0rd			BASIC

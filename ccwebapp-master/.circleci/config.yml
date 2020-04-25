@@ -1,0 +1,43 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory : ~/ccwebapp/webapp 
+
+    steps:
+      - checkout:
+          path: ~/ccwebapp
+      - restore_cache:
+          keys: 
+          - webapp-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - webapp-
+      - run : mvn dependency:go-offline
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: webapp-{{ checksum "pom.xml" }}
+      - run :
+          name: Build jar
+          command: mvn install
+      - run:
+          name: Install packages
+          command: sudo apt-get update && sudo apt-get install wget zip unzip -y && sudo apt-get install python-dev && sudo apt-get install python-pip -y
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      - run:
+          name: zip artifact
+          command: |
+            cd ..
+            mkdir codedeploy_artifact
+            zip csye6225-codedeploy-${CIRCLE_BUILD_NUM}.zip webapp/target/ccwebapp-1.0-SNAPSHOT.jar codedeploy/**.sh appspec.yml cloudwatch/config.json
+            mv csye6225-codedeploy-${CIRCLE_BUILD_NUM}.zip codedeploy_artifact/
+      - run:
+          name: Upload to S3 Bucket
+          command: aws s3 sync ../codedeploy_artifact s3://${BUCKET_NAME}
+      - run:
+          name: Amazon Deploy
+          command: aws deploy create-deployment --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${BUCKET_NAME},bundleType=zip,key=csye6225-codedeploy-${CIRCLE_BUILD_NUM}.zip --region ${AWS_REGION}
+ 
